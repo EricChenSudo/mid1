@@ -1,17 +1,23 @@
 #include "mbed.h"
 #include "uLCD_4DGL.h"
 
+using namespace std::chrono;
+
 uLCD_4DGL uLCD(D1, D0, D2); // serial tx, serial rx, reset pin;
 InterruptIn but1(A1);         // up button
 InterruptIn but2(A2);         // down button 
 InterruptIn but3(A3);         // selection button
+AnalogOut Aout(PA_4);       // set the analog output
 
-char pre_slew_rate;  // 1~4 (1 is the biggest)
-char slew_rate; // 
+char pre_slew_rate = 1;  // 1~4 (1 is the biggest)
+char slew_rate = 1; 
+float amp = 1.0f;
 Timer debounce_up; // define debounce timer
 Timer debounce_down; // define debounce timer
 Timer debounce_sel; // define debounce timer
 EventQueue queue;
+EventQueue wavequeue;
+
 
 void print_on_uLCD_up(void) { // print the pre_freq on the uLCD
     if (pre_slew_rate == 1) {
@@ -72,6 +78,42 @@ void print_on_uLCD_down(void) { // print the pre_freq on the uLCD
 	return;
 }
 
+void gen_wave(void) {
+    float change;
+    if (slew_rate == 1) {
+        change = 1.0/39/1.1;
+    }
+    else if (slew_rate == 2) {
+        change = 1.0/19/1.1;
+    }
+    else if (slew_rate == 3) {
+        change = 1.0/9/1.1;
+    }
+    else if (slew_rate == 4) {
+        change = 1.0/4/1.1;
+    }
+
+    while (1) {
+        amp = 0.0f;
+        while (amp < 0.909) {
+            Aout = amp;
+            ThisThread::sleep_for(2ms);
+            amp += change;
+        }
+        if (slew_rate == 1) ThisThread::sleep_for(80ms);
+        else if (slew_rate == 2) ThisThread::sleep_for(160ms);
+        else if (slew_rate == 3) ThisThread::sleep_for(200ms);
+        else if (slew_rate == 2) ThisThread::sleep_for(220ms);
+        amp = 1.0/1.1;
+        while (amp > 0.0) {
+            Aout = amp;
+            ThisThread::sleep_for(2ms);
+            amp -= change;
+        }
+
+    }
+}
+
 void print_on_uLCD_sel(void) { // print the pre_freq on the uLCD
     if (pre_slew_rate == 1) {
         slew_rate = 1;
@@ -97,6 +139,8 @@ void print_on_uLCD_sel(void) { // print the pre_freq on the uLCD
 	    uLCD.locate(0, 3);
 	    uLCD.printf("slew_rate = 1/8\n");
     }
+
+    wavequeue.call(gen_wave);
 	
 	return;
 }
@@ -137,10 +181,16 @@ int main(void)
     debounce_up.start();
     debounce_down.start();
     debounce_sel.start();
+    Aout = 1.0f;
 
     but1.rise(toggle_up);
     but2.rise(toggle_down);
     but3.rise(toggle_sel);
+    Thread t(osPriorityNormal);
+    t.start(callback(&queue, &EventQueue::dispatch_forever));
+
+    Thread waveThread(osPriorityNormal);
+    waveThread.start(callback(&wavequeue, &EventQueue::dispatch_forever));
 
     while(1) ;
 
