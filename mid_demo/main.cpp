@@ -8,15 +8,18 @@ InterruptIn but1(A1);         // up button
 InterruptIn but2(A2);         // down button 
 InterruptIn but3(A3);         // selection button
 AnalogOut Aout(PA_4);       // set the analog output
+AnalogIn Ain(A0);           // set the analog input
 
 char pre_slew_rate = 1;  // 1~4 (1 is the biggest)
 char slew_rate = 1; 
 float amp = 1.0f;
+float ADCdata[240]; // sampled data
 Timer debounce_up; // define debounce timer
 Timer debounce_down; // define debounce timer
 Timer debounce_sel; // define debounce timer
 EventQueue queue;
 EventQueue wavequeue;
+EventQueue samplequeue;
 
 
 void print_on_uLCD_up(void) { // print the pre_freq on the uLCD
@@ -80,24 +83,29 @@ void print_on_uLCD_down(void) { // print the pre_freq on the uLCD
 
 void gen_wave(void) {
     float change;
+    float w_t;
     if (slew_rate == 1) {
         change = 1.0/39/1.1;
+        w_t = 1400;
     }
     else if (slew_rate == 2) {
         change = 1.0/19/1.1;
+        w_t = 1800;
     }
     else if (slew_rate == 3) {
         change = 1.0/9/1.1;
+        w_t = 2000;
     }
     else if (slew_rate == 4) {
         change = 1.0/4/1.1;
+        w_t = 2200;
     }
 
     while (1) {
         amp = 0.0f;
         while (amp < 0.91) {
             Aout = amp;
-            ThisThread::sleep_for(2ms);
+            wait_us(w_t);
             amp += change;
         }
         if (slew_rate == 1) ThisThread::sleep_for(80ms);
@@ -107,11 +115,29 @@ void gen_wave(void) {
         amp = 1.0/1.1;
         while (amp > 0.0) {
             Aout = amp;
-            ThisThread::sleep_for(2ms);
+            wait_us(w_t);
             amp -= change;
         }
 
     }
+}
+
+void start_sample(void) {
+    int i;
+    ThisThread::sleep_for(20ms);
+    
+
+
+    for (i = 0; i < 240; ++i) {
+        ADCdata[i] = Ain;
+        wait_us(1400);
+    }
+
+    for (i = 0; i < 240; ++i) {
+        printf("%f\r\n", ADCdata[i]);
+        ThisThread::sleep_for(10ms);
+    } 
+    
 }
 
 void print_on_uLCD_sel(void) { // print the pre_freq on the uLCD
@@ -141,6 +167,7 @@ void print_on_uLCD_sel(void) { // print the pre_freq on the uLCD
     }
 
     wavequeue.call(gen_wave);
+    samplequeue.call(start_sample);
 	
 	return;
 }
@@ -191,6 +218,8 @@ int main(void)
 
     Thread waveThread(osPriorityNormal);
     waveThread.start(callback(&wavequeue, &EventQueue::dispatch_forever));
+    Thread sampleThread(osPriorityNormal);
+    sampleThread.start(callback(&samplequeue, &EventQueue::dispatch_forever));
 
     while(1) ;
 
