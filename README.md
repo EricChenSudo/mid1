@@ -21,6 +21,7 @@
 ![image](https://github.com/EricChenSudo/mid1/blob/master/picture/330867.jpg)
 
 接下來附上當slew rate等於1的時候的執行結果(其餘執行結果在PDF)<br>
+
 ![image](https://github.com/EricChenSudo/mid1/blob/master/picture/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2%202021-04-07%20190300.png)
 ![image](https://github.com/EricChenSudo/mid1/blob/master/picture/%E8%9E%A2%E5%B9%95%E6%93%B7%E5%8F%96%E7%95%AB%E9%9D%A2%202021-04-07%20190656.png)
 
