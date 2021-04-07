@@ -95,7 +95,7 @@ void gen_wave(void) {
 
     while (1) {
         amp = 0.0f;
-        while (amp < 0.909) {
+        while (amp < 0.91) {
             Aout = amp;
             ThisThread::sleep_for(2ms);
             amp += change;
@@ -103,7 +103,7 @@ void gen_wave(void) {
         if (slew_rate == 1) ThisThread::sleep_for(80ms);
         else if (slew_rate == 2) ThisThread::sleep_for(160ms);
         else if (slew_rate == 3) ThisThread::sleep_for(200ms);
-        else if (slew_rate == 2) ThisThread::sleep_for(220ms);
+        else if (slew_rate == 4) ThisThread::sleep_for(220ms);
         amp = 1.0/1.1;
         while (amp > 0.0) {
             Aout = amp;
